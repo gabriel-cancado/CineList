@@ -132,4 +132,6 @@ npm run dev            # http://localhost:5173 (API em VITE_API_URL, padrão htt
 ```
 
 Rotas: `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (Bearer token),
-`GET /movies/search?title=&director=&year=&page=`, `GET /movies/:tmdbId`.
+`GET /movies/search?title=&director=&year=&page=`, `GET /movies/:tmdbId`,
+`GET /watchlist`, `GET /watchlist/check/:tmdbId`, `POST /watchlist/:tmdbId`, `DELETE /watchlist/:tmdbId`,
+`GET /diary`, `GET /diary/check/:tmdbId`, `POST /diary/:tmdbId`, `DELETE /diary/:id`.

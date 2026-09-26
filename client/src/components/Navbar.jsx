@@ -12,6 +12,8 @@ export default function Navbar() {
         {/* New sections (diário, quero assistir, feed…) get a NavLink here. */}
         <div className={styles.links}>
           <NavLink to="/" end>Buscar</NavLink>
+          <NavLink to="/watchlist">Quero Assistir</NavLink>
+          <NavLink to="/diary">Diário</NavLink>
         </div>
         <div className={styles.user}>
           <span className={styles.avatar}>{user.name[0].toUpperCase()}</span>

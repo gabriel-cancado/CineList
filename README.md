@@ -80,19 +80,19 @@ flowchart LR
     user([Usuário]) --> client
 
     subgraph client [Frontend - React + Vite]
-        pages[Páginas<br/>AuthPage, SearchPage, MoviePage]
+        pages[Páginas<br/>AuthPage, SearchPage, MoviePage,<br/>WatchlistPage, DiaryPage]
         ctx[AuthContext<br/>usuário logado + token]
-        api[api/<br/>client.js, auth.js, movies.js]
+        api[api/<br/>client.js, auth.js, movies.js,<br/>watchlist.js, diary.js]
         pages --> ctx
         pages --> api
         ctx --> api
     end
 
     subgraph server [Backend - Express]
-        routes[routes/<br/>authRoutes, movieRoutes]
+        routes[routes/<br/>authRoutes, movieRoutes,<br/>watchlistRoutes, diaryRoutes]
         mw[middleware/<br/>requireAuth, errorHandler]
-        ctrl[controllers/<br/>authController, movieController]
-        models[models/<br/>User, Movie]
+        ctrl[controllers/<br/>authController, movieController,<br/>watchlistController, diaryController]
+        models[models/<br/>User, Movie, Watchlist, DiaryEntry]
         tmdb[services/tmdb.js]
         routes --> mw
         routes --> ctrl
@@ -134,6 +134,21 @@ classDiagram
         Date updatedAt
     }
 
+    class Watchlist {
+        ObjectId _id
+        ObjectId user
+        ObjectId movie
+        Date createdAt
+    }
+
+    class DiaryEntry {
+        ObjectId _id
+        ObjectId user
+        ObjectId movie
+        Date watchedAt
+        Date createdAt
+    }
+
     class CastMember {
         String name
         String character
@@ -141,8 +156,13 @@ classDiagram
     }
 
     Movie *-- "0..12" CastMember : cast
+    User "1" <-- "0..*" Watchlist : user
+    Movie "1" <-- "0..*" Watchlist : movie
+    User "1" <-- "0..*" DiaryEntry : user
+    Movie "1" <-- "0..*" DiaryEntry : movie
     note for User "email é único; a senha é salva só como hash bcrypt"
     note for Movie "tmdbId é único; cópia local de um filme do TMDB"
+    note for Watchlist "par (user, movie) é único"
 ```
 
 ### Diagrama de sequência: login e abertura da página de um filme
