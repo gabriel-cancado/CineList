@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import AuthPage from './pages/AuthPage';
 import SearchPage from './pages/SearchPage';
 import MoviePage from './pages/MoviePage';
+import WatchlistPage from './pages/WatchlistPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<SearchPage />} />
             <Route path="/movies/:tmdbId" element={<MoviePage />} />
+            <Route path="/watchlist" element={<WatchlistPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
