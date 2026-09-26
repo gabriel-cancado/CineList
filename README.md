@@ -121,3 +121,37 @@ classDiagram
     note for User "email é único; a senha é salva só como hash bcrypt"
     note for Movie "tmdbId é único; cópia local de um filme do TMDB"
 ```
+
+### Diagrama de sequência: login e abertura da página de um filme
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant F as Frontend (React)
+    participant B as Backend (Express)
+    participant DB as MongoDB
+    participant T as API do TMDB
+
+    U->>F: informa e-mail e senha
+    F->>B: POST /auth/login
+    B->>DB: busca User pelo e-mail
+    DB-->>B: User (com passwordHash)
+    B->>B: bcrypt.compare(senha, hash)
+    alt senha correta
+        B-->>F: 200 { token JWT, user }
+        F->>F: salva token no localStorage
+        F-->>U: redireciona para a busca
+    else senha incorreta
+        B-->>F: 401 "E-mail ou senha inválidos"
+        F-->>U: mostra o erro no formulário
+    end
+
+    U->>F: clica em um filme
+    F->>B: GET /movies/:tmdbId
+    B->>T: GET /movie/:id?append_to_response=credits
+    T-->>B: dados do filme + elenco
+    B->>DB: upsert Movie pelo tmdbId
+    DB-->>B: Movie salvo
+    B-->>F: 200 { movie }
+    F-->>U: exibe sinopse, elenco, duração e nota média
+```
