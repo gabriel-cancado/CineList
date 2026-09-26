@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import movieRoutes from './routes/movieRoutes.js';
 import watchlistRoutes from './routes/watchlistRoutes.js';
+import diaryRoutes from './routes/diaryRoutes.js';
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/auth', authRoutes);
 app.use('/movies', movieRoutes);
 app.use('/watchlist', watchlistRoutes);
+app.use('/diary', diaryRoutes);
 
 app.use(errorHandler);
 
