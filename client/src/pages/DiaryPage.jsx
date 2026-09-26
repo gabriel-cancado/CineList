@@ -18,6 +18,8 @@ export default function DiaryPage() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [entryToDelete, setEntryToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getDiary()
@@ -26,13 +28,17 @@ export default function DiaryPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleRemove(id) {
-    if (!window.confirm('Remover esta entrada do diário?')) return;
+  async function confirmDelete() {
+    if (!entryToDelete) return;
+    setDeleting(true);
     try {
-      await removeDiaryEntry(id);
-      setEntries((prev) => prev.filter((entry) => entry._id !== id));
+      await removeDiaryEntry(entryToDelete._id);
+      setEntries((prev) => prev.filter((entry) => entry._id !== entryToDelete._id));
+      setEntryToDelete(null);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -70,7 +76,7 @@ export default function DiaryPage() {
                   <button
                     type="button"
                     className={styles.deleteBtn}
-                    onClick={() => handleRemove(entry._id)}
+                    onClick={() => setEntryToDelete(entry)}
                     title="Remover do diário"
                   >
                     ×
@@ -86,6 +92,35 @@ export default function DiaryPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {entryToDelete && (
+        <div className={styles.modalOverlay} onClick={() => setEntryToDelete(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Remover do Diário</h3>
+            <p className={styles.modalText}>
+              Tem certeza que deseja remover <strong>{entryToDelete.movie.title}</strong> do seu diário?
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={() => setEntryToDelete(null)}
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={styles.confirmDeleteBtn}
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Removendo…' : 'Remover'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
