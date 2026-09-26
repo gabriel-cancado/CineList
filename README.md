@@ -43,6 +43,29 @@ outras pessoas.
 8. **Seguir usuários e feed** — Como usuário, quero seguir outros perfis e ver suas avaliações recentes
    em um feed, para descobrir novos filmes a partir de pessoas com gosto parecido com o meu.
 
+## Como rodar
+
+Pré-requisitos: Node.js 22 ou superior e acesso ao banco no MongoDB Atlas (ou outra URI do MongoDB).
+
+1. Backend:
+
+   ```bash
+   cd server
+   npm install
+   cp .env.example .env   # preencha MONGODB_URI, JWT_SECRET e TMDB_API_KEY
+   npm run dev            # API em http://localhost:3000
+   ```
+
+2. Frontend (em outro terminal):
+
+   ```bash
+   cd client
+   npm install
+   npm run dev            # app em http://localhost:5173
+   ```
+
+A chave do TMDB é gratuita e pode ser gerada em themoviedb.org → Settings → API.
+
 ## Arquitetura
 
 O sistema é dividido em um frontend web (React) e um backend (API REST em Express com MongoDB).
