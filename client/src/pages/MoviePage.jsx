@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getMovie } from '../api/movies';
+import { checkWatchlist, addToWatchlist, removeFromWatchlist } from '../api/watchlist';
 import styles from './MoviePage.module.css';
 
 function formatRuntime(minutes) {
@@ -13,12 +14,32 @@ export default function MoviePage() {
   const { tmdbId } = useParams();
   const [movie, setMovie] = useState(null);
   const [error, setError] = useState('');
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   useEffect(() => {
     setMovie(null);
     setError('');
     getMovie(tmdbId).then((data) => setMovie(data.movie)).catch((err) => setError(err.message));
+    checkWatchlist(tmdbId).then((data) => setInWatchlist(data.inWatchlist)).catch(() => {});
   }, [tmdbId]);
+
+  async function handleWatchlistToggle() {
+    setWatchlistLoading(true);
+    try {
+      if (inWatchlist) {
+        await removeFromWatchlist(tmdbId);
+        setInWatchlist(false);
+      } else {
+        await addToWatchlist(tmdbId);
+        setInWatchlist(true);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setWatchlistLoading(false);
+    }
+  }
 
   if (error) return <div className="container"><p className="error">{error}</p></div>;
   if (!movie) return <div className="container"><p className={styles.loading}>Carregando…</p></div>;
@@ -54,6 +75,17 @@ export default function MoviePage() {
             ) : (
               <span>Ainda sem avaliações da comunidade</span>
             )}
+          </div>
+
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${inWatchlist ? styles.active : ''}`}
+              onClick={handleWatchlistToggle}
+              disabled={watchlistLoading}
+            >
+              {inWatchlist ? '✓ Na sua lista' : '+ Quero assistir'}
+            </button>
           </div>
 
           <h2 className={styles.section}>Sinopse</h2>
