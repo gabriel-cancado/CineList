@@ -1,0 +1,40 @@
+.header {
+  padding: 40px 0 32px;
+}
+
+.header h1 {
+  font-size: clamp(34px, 5vw, 48px);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.empty {
+  color: var(--text-muted);
+  padding: 32px 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 28px 20px;
+  padding-bottom: 60px;
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
