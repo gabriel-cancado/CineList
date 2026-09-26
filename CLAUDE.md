@@ -32,7 +32,7 @@ Arquitetura obrigatória: backend (API + BD) e frontend web separados.
 
 Ordem sugerida de implementação (por dependência): 1 → 2/3 → 4 → 5 → 6 → 7 → 8.
 
-## Estrutura proposta (ainda não existe código)
+## Estrutura
 
 ```
 CineList/
@@ -67,6 +67,14 @@ Padrões sugeridos (confirmar com o usuário antes de assumir):
 - **Design livre:** o agente escolhe a estilização e cria a identidade visual. A UI precisa
   ficar bonita e consistente, porque vale nota e aparece na demo. Mantenha a escolha simples de
   entender e registre aqui a abordagem adotada (ex.: CSS Modules, Tailwind).
+- **Identidade visual:** tema escuro "sala de cinema" — fundo carvão, destaque âmbar, títulos em
+  Instrument Serif e texto em Inter (Google Fonts). Cores, fontes e raios são variáveis CSS em
+  `client/src/global.css` (junto com `.btn`, `.container`, `.error` e inputs); cada componente tem
+  seu `*.module.css` (CSS Modules). Não use cores soltas: reutilize as variáveis.
+- **Divisão do time:** histórias 1–3 (login, busca, página do filme) com Gabriel Cançado; 4–8 com
+  os colegas. Pontos de extensão: `MoviePage` já exibe `movie.averageRating`/`movie.ratingsCount`
+  se o backend enviar; novas seções entram como `NavLink` em `Navbar.jsx` e como rota dentro do
+  `<Layout>` em `App.jsx` (rotas ali exigem login).
 - **Nota de 0 a 5 com meias estrelas** (passos de 0.5). Uma avaliação por usuário por filme;
   avaliar de novo atualiza a nota. A média da comunidade é calculada a partir dessas avaliações.
 
@@ -114,6 +122,13 @@ Backend (`server/`, Node 24, ES modules, Express 5 — erros em handlers async v
 cd server && npm install
 cp .env.example .env   # preencher MONGODB_URI, JWT_SECRET, TMDB_API_KEY
 npm run dev            # http://localhost:3000 (reinicia ao salvar)
+```
+
+Frontend (`client/`, React 19 + Vite + React Router; token JWT no `localStorage`):
+
+```bash
+cd client && npm install
+npm run dev            # http://localhost:5173 (API em VITE_API_URL, padrão http://localhost:3000)
 ```
 
 Rotas: `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (Bearer token),
