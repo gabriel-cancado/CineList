@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getMovie } from '../api/movies';
 import { checkWatchlist, addToWatchlist, removeFromWatchlist } from '../api/watchlist';
+import { checkDiary, logMovie } from '../api/diary';
 import styles from './MoviePage.module.css';
 
 function formatRuntime(minutes) {
@@ -16,12 +17,17 @@ export default function MoviePage() {
   const [error, setError] = useState('');
   const [inWatchlist, setInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchedCount, setWatchedCount] = useState(0);
+  const [showDiaryModal, setShowDiaryModal] = useState(false);
+  const [watchDate, setWatchDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [diarySubmitting, setDiarySubmitting] = useState(false);
 
   useEffect(() => {
     setMovie(null);
     setError('');
     getMovie(tmdbId).then((data) => setMovie(data.movie)).catch((err) => setError(err.message));
     checkWatchlist(tmdbId).then((data) => setInWatchlist(data.inWatchlist)).catch(() => {});
+    checkDiary(tmdbId).then((data) => setWatchedCount(data.count || 0)).catch(() => {});
   }, [tmdbId]);
 
   async function handleWatchlistToggle() {
@@ -38,6 +44,20 @@ export default function MoviePage() {
       alert(err.message);
     } finally {
       setWatchlistLoading(false);
+    }
+  }
+
+  async function handleSaveDiary(e) {
+    e.preventDefault();
+    setDiarySubmitting(true);
+    try {
+      await logMovie(tmdbId, watchDate);
+      setWatchedCount((prev) => prev + 1);
+      setShowDiaryModal(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDiarySubmitting(false);
     }
   }
 
@@ -86,12 +106,45 @@ export default function MoviePage() {
             >
               {inWatchlist ? '✓ Na sua lista' : '+ Quero assistir'}
             </button>
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${watchedCount > 0 ? styles.active : ''}`}
+              onClick={() => setShowDiaryModal(true)}
+            >
+              {watchedCount > 0 ? `✓ Assistido (${watchedCount})` : '+ Marcar como assistido'}
+            </button>
           </div>
 
           <h2 className={styles.section}>Sinopse</h2>
           <p className={styles.overview}>{movie.overview || 'Sinopse não disponível.'}</p>
         </div>
       </div>
+
+      {showDiaryModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowDiaryModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Registrar no Diário</h3>
+            <p className={styles.modalSubtitle}>Quando você assistiu a este filme?</p>
+            <form onSubmit={handleSaveDiary}>
+              <input
+                type="date"
+                value={watchDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setWatchDate(e.target.value)}
+                required
+              />
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.cancelBtn} onClick={() => setShowDiaryModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn" disabled={diarySubmitting}>
+                  {diarySubmitting ? 'Salvando…' : 'Salvar no diário'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {movie.cast.length > 0 && (
         <section className="container">
