@@ -107,4 +107,14 @@ trabalho em equipe com agentes e % de código gerado por IA.
 
 ## Comandos
 
-_(A definir quando o projeto for inicializado — ex.: `npm run dev` em `server/` e `client/`.)_
+Backend (`server/`, Node 24, ES modules, Express 5 — erros em handlers async vão direto ao
+`errorHandler`):
+
+```bash
+cd server && npm install
+cp .env.example .env   # preencher MONGODB_URI, JWT_SECRET, TMDB_API_KEY
+npm run dev            # http://localhost:3000 (reinicia ao salvar)
+```
+
+Rotas: `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (Bearer token),
+`GET /movies/search?title=&director=&year=&page=`, `GET /movies/:tmdbId`.
