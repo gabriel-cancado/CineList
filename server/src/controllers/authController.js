@@ -9,11 +9,11 @@ function createToken(user) {
 
 export async function register(req, res) {
   const { name, email, password } = req.body;
-  if (!name || !email || !password) throw new HttpError(400, 'Name, email and password are required');
-  if (password.length < 6) throw new HttpError(400, 'Password must have at least 6 characters');
+  if (!name || !email || !password) throw new HttpError(400, 'Nome, e-mail e senha são obrigatórios');
+  if (password.length < 6) throw new HttpError(400, 'A senha deve ter pelo menos 6 caracteres');
 
   if (await User.exists({ email: email.toLowerCase() })) {
-    throw new HttpError(409, 'Email already registered');
+    throw new HttpError(409, 'E-mail já cadastrado');
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -25,7 +25,7 @@ export async function login(req, res) {
   const { email, password } = req.body;
   const user = await User.findOne({ email: email?.toLowerCase() });
   if (!user || !(await bcrypt.compare(password || '', user.passwordHash))) {
-    throw new HttpError(401, 'Invalid email or password');
+    throw new HttpError(401, 'E-mail ou senha inválidos');
   }
   res.json({ token: createToken(user), user });
 }

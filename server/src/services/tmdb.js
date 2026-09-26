@@ -11,8 +11,8 @@ async function tmdbFetch(path, params = {}) {
     if (value !== undefined && value !== '') query.set(key, value);
   }
   const res = await fetch(`${BASE_URL}${path}?${query}`);
-  if (res.status === 404) throw new HttpError(404, 'Movie not found');
-  if (!res.ok) throw new HttpError(502, 'Failed to reach TMDB');
+  if (res.status === 404) throw new HttpError(404, 'Filme não encontrado');
+  if (!res.ok) throw new HttpError(502, 'Não foi possível consultar o TMDB');
   return res.json();
 }
 
