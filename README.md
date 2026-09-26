@@ -42,3 +42,82 @@ outras pessoas.
 
 8. **Seguir usuários e feed** — Como usuário, quero seguir outros perfis e ver suas avaliações recentes
    em um feed, para descobrir novos filmes a partir de pessoas com gosto parecido com o meu.
+
+## Arquitetura
+
+O sistema é dividido em um frontend web (React) e um backend (API REST em Express com MongoDB).
+Os dados dos filmes vêm da API pública do [TMDB](https://www.themoviedb.org/); o backend faz a
+ponte com o TMDB (a chave fica só no servidor) e guarda no MongoDB uma cópia de cada filme aberto,
+para que avaliações, diário e listas referenciem documentos locais.
+
+### Diagrama de componentes
+
+```mermaid
+flowchart LR
+    user([Usuário]) --> client
+
+    subgraph client [Frontend - React + Vite]
+        pages[Páginas<br/>AuthPage, SearchPage, MoviePage]
+        ctx[AuthContext<br/>usuário logado + token]
+        api[api/<br/>client.js, auth.js, movies.js]
+        pages --> ctx
+        pages --> api
+        ctx --> api
+    end
+
+    subgraph server [Backend - Express]
+        routes[routes/<br/>authRoutes, movieRoutes]
+        mw[middleware/<br/>requireAuth, errorHandler]
+        ctrl[controllers/<br/>authController, movieController]
+        models[models/<br/>User, Movie]
+        tmdb[services/tmdb.js]
+        routes --> mw
+        routes --> ctrl
+        ctrl --> models
+        ctrl --> tmdb
+    end
+
+    api -- HTTP/JSON + JWT --> routes
+    models --> db[(MongoDB Atlas)]
+    tmdb -- HTTPS --> ext[[API do TMDB]]
+```
+
+### Diagrama de classes (modelos do banco)
+
+```mermaid
+classDiagram
+    class User {
+        ObjectId _id
+        String name
+        String email
+        String passwordHash
+        Date createdAt
+        Date updatedAt
+    }
+
+    class Movie {
+        ObjectId _id
+        Number tmdbId
+        String title
+        Number year
+        String posterUrl
+        String backdropUrl
+        String overview
+        Number runtime
+        String[] genres
+        String[] directors
+        CastMember[] cast
+        Date createdAt
+        Date updatedAt
+    }
+
+    class CastMember {
+        String name
+        String character
+        String photoUrl
+    }
+
+    Movie *-- "0..12" CastMember : cast
+    note for User "email é único; a senha é salva só como hash bcrypt"
+    note for Movie "tmdbId é único; cópia local de um filme do TMDB"
+```
