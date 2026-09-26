@@ -52,17 +52,18 @@ CineList/
 ```
 
 Padrões sugeridos (confirmar com o usuário antes de assumir):
-- Mongoose para modelagem; `.env` com `MONGODB_URI`, `JWT_SECRET`, `PORT` (nunca commitar `.env`;
+- Mongoose para modelagem; `.env` com `MONGODB_URI`, `JWT_SECRET`, `TMDB_API_KEY`, `PORT` (nunca commitar `.env`;
   manter um `.env.example`).
 - Autenticação com bcrypt + JWT.
 - React com Vite e React Router.
 
 ### Decisões tomadas
 
-- **Filmes são cadastrados manualmente** — sem API externa. Os dados ficam no MongoDB próprio.
-  É preciso uma rota `POST /movies` e um formulário de cadastro no frontend (título, diretor, ano,
-  sinopse, elenco, duração, pôster via URL). Padrão: qualquer usuário logado pode cadastrar.
-  Um script de seed com alguns filmes ajuda na demo.
+- **Filmes vêm da API pública do TMDB** (themoviedb.org) — sem cadastro manual. O backend faz
+  proxy das chamadas (a chave `TMDB_API_KEY` fica só no `.env` do servidor) e busca por título,
+  ano (`/search/movie`) e diretor (`/search/person` + `/discover/movie?with_crew=`). Ao abrir,
+  avaliar ou listar um filme, ele é salvo/atualizado no MongoDB (`Movie` com `tmdbId`), para que
+  avaliações, diário e listas referenciem documentos locais e a média seja calculada localmente.
 - **Design livre:** o agente escolhe a estilização e cria a identidade visual. A UI precisa
   ficar bonita e consistente, porque vale nota e aparece na demo. Mantenha a escolha simples de
   entender e registre aqui a abordagem adotada (ex.: CSS Modules, Tailwind).
