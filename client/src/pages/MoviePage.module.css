@@ -53,6 +53,58 @@
 
 .overview { max-width: 680px; margin: 0; font-size: 16px; }
 
+.reviewsSection { margin-bottom: 48px; }
+
+.reviewForm {
+  display: grid;
+  gap: 10px;
+  max-width: 680px;
+  padding: 20px 0 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.reviewLabel { font-weight: 600; }
+
+.reviewForm select,
+.reviewForm textarea {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
+}
+
+.reviewForm select:focus,
+.reviewForm textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.reviewForm textarea { resize: vertical; }
+
+.reviewSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.characterCount,
+.reviewPrompt { color: var(--text-muted); }
+.reviewPrompt { margin: 12px 0; }
+.reviewPrompt a { color: var(--accent); }
+.reviewPrompt a:hover { text-decoration: underline; }
+.savedMessage { margin: 0; color: var(--accent); }
+
+.communityReviews { max-width: 760px; }
+.communityReviews h3 { font-size: 22px; margin: 24px 0 12px; }
+.reviewItem { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.reviewByline { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.reviewByline > span { color: var(--text-muted); white-space: nowrap; }
+.reviewItem p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
 .cast {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -161,4 +213,5 @@
   .poster { width: 200px; }
   .info { padding-top: 0; }
   .overview { margin: 0 auto; }
+  .reviewSubmit { align-items: flex-end; }
 }

@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { getMovie } from '../api/movies';
 import { checkWatchlist, addToWatchlist, removeFromWatchlist } from '../api/watchlist';
 import { checkDiary, logMovie } from '../api/diary';
+import { getMovieReviews, getMyMovieReview, saveMovieReview } from '../api/reviews';
+import { useAuth } from '../context/AuthContext';
 import styles from './MoviePage.module.css';
 
 function formatRuntime(minutes) {
@@ -13,7 +15,9 @@ function formatRuntime(minutes) {
 
 export default function MoviePage() {
   const { tmdbId } = useParams();
+  const { user } = useAuth();
   const [movie, setMovie] = useState(null);
+  const [community, setCommunity] = useState({ averageRating: null, ratingsCount: 0, reviews: [] });
   const [error, setError] = useState('');
   const [inWatchlist, setInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
@@ -21,14 +25,44 @@ export default function MoviePage() {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [watchDate, setWatchDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [diarySubmitting, setDiarySubmitting] = useState(false);
+  const [myReview, setMyReview] = useState(null);
+  const [reviewRating, setReviewRating] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSaved, setReviewSaved] = useState(false);
 
   useEffect(() => {
     setMovie(null);
     setError('');
-    getMovie(tmdbId).then((data) => setMovie(data.movie)).catch((err) => setError(err.message));
-    checkWatchlist(tmdbId).then((data) => setInWatchlist(data.inWatchlist)).catch(() => {});
-    checkDiary(tmdbId).then((data) => setWatchedCount(data.count || 0)).catch(() => {});
-  }, [tmdbId]);
+    setCommunity({ averageRating: null, ratingsCount: 0, reviews: [] });
+    setMyReview(null);
+    setReviewRating('');
+    setReviewText('');
+    setReviewSaved(false);
+
+    getMovie(tmdbId)
+      .then(({ movie: loadedMovie }) => {
+        setMovie(loadedMovie);
+        return getMovieReviews(tmdbId).then(setCommunity).catch((err) => setReviewError(err.message));
+      })
+      .catch((err) => setError(err.message));
+
+    if (user) {
+      checkWatchlist(tmdbId).then((data) => setInWatchlist(data.inWatchlist)).catch(() => {});
+      checkDiary(tmdbId).then((data) => setWatchedCount(data.count || 0)).catch(() => {});
+      getMyMovieReview(tmdbId).then(({ review }) => {
+        setMyReview(review);
+        if (review) {
+          setReviewRating(String(review.rating));
+          setReviewText(review.text);
+        }
+      }).catch(() => {});
+    } else {
+      setInWatchlist(false);
+      setWatchedCount(0);
+    }
+  }, [tmdbId, user]);
 
   async function handleWatchlistToggle() {
     setWatchlistLoading(true);
@@ -61,6 +95,24 @@ export default function MoviePage() {
     }
   }
 
+  async function handleSaveReview(e) {
+    e.preventDefault();
+    setReviewError('');
+    setReviewSaved(false);
+    setReviewSubmitting(true);
+    try {
+      const { review } = await saveMovieReview(tmdbId, Number(reviewRating), reviewText);
+      setMyReview(review);
+      const updatedCommunity = await getMovieReviews(tmdbId);
+      setCommunity(updatedCommunity);
+      setReviewSaved(true);
+    } catch (err) {
+      setReviewError(err.message);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
+
   if (error) return <div className="container"><p className="error">{error}</p></div>;
   if (!movie) return <div className="container"><p className={styles.loading}>Carregando…</p></div>;
 
@@ -87,11 +139,10 @@ export default function MoviePage() {
             </p>
           )}
 
-          {/* Community average: filled in once ratings (story 4) send averageRating/ratingsCount. */}
           <div className={styles.rating}>
             <span className={styles.star}>★</span>
-            {movie.ratingsCount ? (
-              <><strong>{movie.averageRating.toFixed(1)}</strong> <span>({movie.ratingsCount} avaliações)</span></>
+            {community.ratingsCount ? (
+              <><strong>{community.averageRating.toFixed(1)}</strong> <span>({community.ratingsCount} avaliações)</span></>
             ) : (
               <span>Ainda sem avaliações da comunidade</span>
             )}
@@ -119,6 +170,64 @@ export default function MoviePage() {
           <p className={styles.overview}>{movie.overview || 'Sinopse não disponível.'}</p>
         </div>
       </div>
+
+      <section className={`container ${styles.reviewsSection}`}>
+        <h2 className={styles.section}>Avaliações e resenhas</h2>
+        {user ? (
+          watchedCount > 0 || myReview ? (
+            <form className={styles.reviewForm} onSubmit={handleSaveReview}>
+              <label className={styles.reviewLabel} htmlFor="review-rating">Sua nota</label>
+              <select
+                id="review-rating"
+                value={reviewRating}
+                onChange={(e) => setReviewRating(e.target.value)}
+                required
+              >
+                <option value="" disabled>Selecione de 0 a 5 estrelas</option>
+                {[0, 1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>{value} {value === 1 ? 'estrela' : 'estrelas'}</option>
+                ))}
+              </select>
+              <label className={styles.reviewLabel} htmlFor="review-text">Resenha (opcional)</label>
+              <textarea
+                id="review-text"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                maxLength={2000}
+                rows={5}
+                placeholder="O que você achou do filme?"
+              />
+              <div className={styles.reviewSubmit}>
+                <span className={styles.characterCount}>{reviewText.length}/2000</span>
+                <button className="btn" type="submit" disabled={reviewSubmitting || reviewRating === ''}>
+                  {reviewSubmitting ? 'Salvando…' : myReview ? 'Atualizar avaliação' : 'Publicar avaliação'}
+                </button>
+              </div>
+              {reviewError && <p className="error" role="alert">{reviewError}</p>}
+              {reviewSaved && <p className={styles.savedMessage} role="status">Avaliação salva.</p>}
+            </form>
+          ) : (
+            <p className={styles.reviewPrompt}>Marque o filme como assistido no diário para avaliá-lo.</p>
+          )
+        ) : (
+          <p className={styles.reviewPrompt}>Entre na sua conta e marque o filme como assistido para avaliá-lo. <Link to="/login">Entrar</Link></p>
+        )}
+
+        <div className={styles.communityReviews}>
+          <h3>Resenhas da comunidade</h3>
+          {community.reviews.length ? community.reviews.map((review) => (
+            <article className={styles.reviewItem} key={review._id}>
+              <div className={styles.reviewByline}>
+                <strong>{review.user.name}</strong>
+                <span><span className={styles.star}>★</span> {review.rating}/5</span>
+              </div>
+              <p>{review.text}</p>
+            </article>
+          )) : (
+            <p className={styles.reviewPrompt}>Ainda não há resenhas para este filme.</p>
+          )}
+        </div>
+      </section>
 
       {showDiaryModal && (
         <div className={styles.modalOverlay} onClick={() => setShowDiaryModal(false)}>
