@@ -11,5 +11,6 @@ const diaryEntrySchema = new mongoose.Schema(
 
 // Indexes user and watchedAt for chronological retrieval
 diaryEntrySchema.index({ user: 1, watchedAt: -1 });
+diaryEntrySchema.index({ user: 1, movie: 1 }, { unique: true });
 
 export default mongoose.model('DiaryEntry', diaryEntrySchema);
