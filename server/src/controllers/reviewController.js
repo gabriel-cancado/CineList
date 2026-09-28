@@ -49,8 +49,8 @@ export async function save(req, res) {
   const rating = req.body.rating;
   const text = req.body.text ?? '';
 
-  if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 0 || rating > 5) {
-    throw new HttpError(400, 'A nota deve ser um número inteiro entre 0 e 5');
+  if (typeof rating !== 'number' || !Number.isInteger(rating * 2) || rating < 1 || rating > 5) {
+    throw new HttpError(400, 'A nota deve estar entre 1 e 5, em passos de meia estrela');
   }
   if (typeof text !== 'string' || text.length > 2000) {
     throw new HttpError(400, 'A resenha deve ter no máximo 2000 caracteres');

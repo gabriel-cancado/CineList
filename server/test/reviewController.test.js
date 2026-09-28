@@ -43,13 +43,32 @@ test('rejects invalid TMDB IDs in all review endpoints', async () => {
   }
 });
 
-test('rejects ratings outside the integer range from 0 to 5', async () => {
-  const response = createResponse();
+test('rejects zero, fractions smaller than half a star, and ratings above five', async () => {
+  for (const rating of [0, 0.25, 5.5]) {
+    await assert.rejects(
+      save(createSaveRequest({ rating }), createResponse()),
+      (error) => error.status === 400,
+    );
+  }
+});
 
-  await assert.rejects(
-    save(createSaveRequest({ rating: 5.5 }), response),
-    (error) => error.status === 400,
-  );
+test('accepts and saves a half-star rating', async (t) => {
+  const movie = { _id: 'movie-1' };
+  const review = { _id: 'review-1', rating: 4.5, text: '' };
+  let update;
+
+  t.mock.method(Movie, 'findOne', async () => movie);
+  t.mock.method(DiaryEntry, 'exists', async () => ({ _id: 'entry-1' }));
+  t.mock.method(MovieReview, 'findOneAndUpdate', (filter, changes) => {
+    update = { filter, changes };
+    return { populate: async () => review };
+  });
+
+  const response = createResponse();
+  await save(createSaveRequest({ rating: 4.5 }), response);
+
+  assert.equal(update.changes.$set.rating, 4.5);
+  assert.equal(response.body.review.rating, 4.5);
 });
 
 test('rejects review text longer than 2000 characters', async () => {

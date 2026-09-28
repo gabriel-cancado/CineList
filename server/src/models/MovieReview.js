@@ -7,9 +7,12 @@ const movieReviewSchema = new mongoose.Schema(
     rating: {
       type: Number,
       required: true,
-      min: 0,
+      min: 1,
       max: 5,
-      validate: Number.isInteger,
+      validate: {
+        validator: (value) => Number.isInteger(value * 2),
+        message: 'A nota deve usar incrementos de meia estrela',
+      },
     },
     text: { type: String, trim: true, maxlength: 2000, default: '' },
   },
