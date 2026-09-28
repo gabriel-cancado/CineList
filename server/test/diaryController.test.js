@@ -44,6 +44,27 @@ test('returns the existing diary entry instead of creating a duplicate', async (
   assert.equal(response.body.entry._id, 'entry-1');
 });
 
+test('returns the winning diary entry when simultaneous requests conflict on the unique index', async (t) => {
+  const movie = { _id: 'movie-1' };
+  const populatedEntry = { _id: 'entry-1', movie };
+  const existingEntry = { _id: 'entry-1', populate: async () => populatedEntry };
+  const duplicateKeyError = Object.assign(new Error('Duplicate key'), { code: 11000 });
+  let lookupCount = 0;
+
+  t.mock.method(Movie, 'findOne', async () => movie);
+  t.mock.method(DiaryEntry, 'findOne', () => {
+    lookupCount += 1;
+    return Promise.resolve(lookupCount === 1 ? null : existingEntry);
+  });
+  t.mock.method(DiaryEntry, 'create', async () => { throw duplicateKeyError; });
+
+  const response = createResponse();
+  await add({ body: {}, params: { tmdbId: '42' }, user: { _id: 'user-1' } }, response);
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(response.body.entry._id, 'entry-1');
+});
+
 test('returns the diary entry ID and a binary watched count', async (t) => {
   const movie = { _id: 'movie-1' };
   const entry = { _id: 'entry-1' };
