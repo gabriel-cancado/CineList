@@ -276,31 +276,34 @@ export default function MoviePage() {
                 </>
               )}
               <fieldset className={styles.ratingFieldset}>
-                <legend className={styles.reviewLabel}>Sua nota de 0 a 5 estrelas</legend>
+                <legend className={styles.reviewLabel}>Sua nota de 1 a 5 estrelas, com meias estrelas</legend>
                 <div className={styles.ratingOptions}>
-                  {[0, 1, 2, 3, 4, 5].map((value) => {
-                    const isSelected = reviewRating === String(value);
-                    const isFilled = value > 0 && Number(reviewRating) >= value;
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const rating = Number(reviewRating);
+                    const fillClass = rating >= star
+                      ? styles.filled
+                      : rating >= star - 0.5 ? styles.halfFilled : '';
                     return (
-                      <label
-                        className={`${styles.ratingChoice} ${isFilled ? styles.filled : ''} ${isSelected ? styles.selected : ''}`}
-                        key={value}
-                      >
-                        <input
-                          className={styles.ratingRadio}
-                          type="radio"
-                          name="review-rating"
-                          value={value}
-                          checked={isSelected}
-                          onChange={(e) => setReviewRating(e.target.value)}
-                        />
-                        <span className={`${styles.ratingSymbol} ${value === 0 ? styles.ratingZero : ''}`} aria-hidden="true">
-                          {value === 0 ? '0' : '★'}
-                        </span>
-                        <span className={styles.srOnly}>
-                          {value === 0 ? 'Nota zero, sem estrelas' : `${value} ${value === 1 ? 'estrela' : 'estrelas'}`}
-                        </span>
-                      </label>
+                      <div className={`${styles.ratingStar} ${fillClass}`} key={star}>
+                        <span className={styles.ratingSymbol} aria-hidden="true">★</span>
+                        {[star - 0.5, star].map((value) => (
+                          <label
+                            className={`${styles.ratingHalfChoice} ${value < star ? styles.leftHalf : styles.rightHalf}`}
+                            key={value}
+                          >
+                            <input
+                              className={styles.ratingRadio}
+                              type="radio"
+                              name="review-rating"
+                              value={value}
+                              checked={reviewRating === String(value)}
+                              onChange={(e) => setReviewRating(e.target.value)}
+                              required={star === 1 && value === 0.5}
+                            />
+                            <span className={styles.srOnly}>{value} {value === 1 ? 'estrela' : 'estrelas'}</span>
+                          </label>
+                        ))}
+                      </div>
                     );
                   })}
                 </div>
