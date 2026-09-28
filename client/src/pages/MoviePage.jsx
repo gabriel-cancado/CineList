@@ -30,12 +30,15 @@ export default function MoviePage() {
   const [reviewText, setReviewText] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [communityError, setCommunityError] = useState('');
   const [reviewSaved, setReviewSaved] = useState(false);
 
   useEffect(() => {
     setMovie(null);
     setError('');
     setCommunity({ averageRating: null, ratingsCount: 0, reviews: [] });
+    setCommunityError('');
+    setReviewError('');
     setMyReview(null);
     setReviewRating('');
     setReviewText('');
@@ -44,7 +47,7 @@ export default function MoviePage() {
     getMovie(tmdbId)
       .then(({ movie: loadedMovie }) => {
         setMovie(loadedMovie);
-        return getMovieReviews(tmdbId).then(setCommunity).catch((err) => setReviewError(err.message));
+        return getMovieReviews(tmdbId).then(setCommunity).catch((err) => setCommunityError(err.message));
       })
       .catch((err) => setError(err.message));
 
@@ -98,14 +101,18 @@ export default function MoviePage() {
   async function handleSaveReview(e) {
     e.preventDefault();
     setReviewError('');
+    setCommunityError('');
     setReviewSaved(false);
     setReviewSubmitting(true);
     try {
       const { review } = await saveMovieReview(tmdbId, Number(reviewRating), reviewText);
       setMyReview(review);
-      const updatedCommunity = await getMovieReviews(tmdbId);
-      setCommunity(updatedCommunity);
       setReviewSaved(true);
+      try {
+        setCommunity(await getMovieReviews(tmdbId));
+      } catch (err) {
+        setCommunityError(`Avaliação salva, mas não foi possível atualizar a comunidade: ${err.message}`);
+      }
     } catch (err) {
       setReviewError(err.message);
     } finally {
@@ -215,6 +222,7 @@ export default function MoviePage() {
 
         <div className={styles.communityReviews}>
           <h3>Resenhas da comunidade</h3>
+          {communityError && <p className="error" role="alert">{communityError}</p>}
           {community.reviews.length ? community.reviews.map((review) => (
             <article className={styles.reviewItem} key={review._id}>
               <div className={styles.reviewByline}>
