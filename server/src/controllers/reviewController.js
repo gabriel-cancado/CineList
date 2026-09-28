@@ -4,7 +4,11 @@ import MovieReview from '../models/MovieReview.js';
 import { HttpError } from '../middleware/errorHandler.js';
 
 async function findMovie(tmdbId) {
-  return Movie.findOne({ tmdbId: Number(tmdbId) });
+  const numericId = Number(tmdbId);
+  if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+    throw new HttpError(400, 'ID do filme inválido');
+  }
+  return Movie.findOne({ tmdbId: numericId });
 }
 
 // GET /reviews/:tmdbId

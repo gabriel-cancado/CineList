@@ -3,7 +3,7 @@ import test from 'node:test';
 import DiaryEntry from '../src/models/DiaryEntry.js';
 import Movie from '../src/models/Movie.js';
 import MovieReview from '../src/models/MovieReview.js';
-import { list, save } from '../src/controllers/reviewController.js';
+import { list, mine, save } from '../src/controllers/reviewController.js';
 
 function createResponse() {
   return {
@@ -27,6 +27,21 @@ function createSaveRequest({ rating = 4, text = '' } = {}) {
     user: { _id: 'user-1' },
   };
 }
+
+test('rejects invalid TMDB IDs in all review endpoints', async () => {
+  const endpoints = [
+    [list, { params: { tmdbId: 'not-a-number' } }],
+    [mine, { params: { tmdbId: '0' }, user: { _id: 'user-1' } }],
+    [save, { ...createSaveRequest(), params: { tmdbId: '42.5' } }],
+  ];
+
+  for (const [handler, request] of endpoints) {
+    await assert.rejects(
+      handler(request, createResponse()),
+      (error) => error.status === 400,
+    );
+  }
+});
 
 test('rejects ratings outside the integer range from 0 to 5', async () => {
   const response = createResponse();
