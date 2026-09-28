@@ -59,9 +59,8 @@ export async function save(req, res) {
   const movie = await findMovie(req.params.tmdbId);
   if (!movie) throw new HttpError(404, 'Filme não encontrado');
 
-  const existingReview = await MovieReview.findOne({ user: req.user._id, movie: movie._id });
   const watched = await DiaryEntry.exists({ user: req.user._id, movie: movie._id });
-  if (!watched && !existingReview) {
+  if (!watched) {
     throw new HttpError(400, 'Marque o filme como assistido antes de avaliá-lo');
   }
 

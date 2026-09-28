@@ -80,18 +80,23 @@ test('requires the user to have watched the movie before the first rating', asyn
   assert.equal(saved, false);
 });
 
+test('requires the movie to remain in the diary before updating an existing review', async (t) => {
+  t.mock.method(Movie, 'findOne', async () => ({ _id: 'movie-1' }));
+  t.mock.method(DiaryEntry, 'exists', async () => null);
+
+  await assert.rejects(
+    save(createSaveRequest(), createResponse()),
+    (error) => error.status === 400,
+  );
+});
+
 test('returns the rating created by a concurrent request after a duplicate-key conflict', async (t) => {
   const movie = { _id: 'movie-1' };
   const concurrentReview = { _id: 'review-1', rating: 4, text: '' };
-  let reviewLookupCount = 0;
   const duplicateKeyError = Object.assign(new Error('Duplicate key'), { code: 11000 });
 
   t.mock.method(Movie, 'findOne', async () => movie);
-  t.mock.method(MovieReview, 'findOne', () => {
-    reviewLookupCount += 1;
-    if (reviewLookupCount === 1) return Promise.resolve(null);
-    return { populate: async () => concurrentReview };
-  });
+  t.mock.method(MovieReview, 'findOne', () => ({ populate: async () => concurrentReview }));
   t.mock.method(DiaryEntry, 'exists', async () => ({ _id: 'entry-1' }));
   t.mock.method(MovieReview, 'findOneAndUpdate', () => ({
     populate: async () => { throw duplicateKeyError; },
@@ -100,7 +105,6 @@ test('returns the rating created by a concurrent request after a duplicate-key c
   const response = createResponse();
   await save(createSaveRequest(), response);
 
-  assert.equal(reviewLookupCount, 2);
   assert.equal(response.body.review, concurrentReview);
 });
 
