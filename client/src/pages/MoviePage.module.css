@@ -55,12 +55,9 @@
 
 .reviewsSection { margin-bottom: 48px; }
 
-.reviewForm {
+.modalReviewForm {
   display: grid;
   gap: 10px;
-  max-width: 680px;
-  padding: 20px 0 28px;
-  border-bottom: 1px solid var(--border);
 }
 
 .reviewLabel { font-weight: 600; }
@@ -115,8 +112,7 @@
   border: 0;
 }
 
-.reviewForm select,
-.reviewForm textarea {
+.reviewTextarea {
   width: 100%;
   padding: 11px 14px;
   background: var(--surface-2);
@@ -126,13 +122,12 @@
   font: inherit;
 }
 
-.reviewForm select:focus,
-.reviewForm textarea:focus {
+.reviewTextarea:focus {
   outline: none;
   border-color: var(--accent);
 }
 
-.reviewForm textarea { resize: vertical; }
+.reviewTextarea { resize: vertical; }
 
 .reviewSubmit {
   display: flex;
@@ -225,6 +220,8 @@
 .modal {
   width: 100%;
   max-width: 400px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);

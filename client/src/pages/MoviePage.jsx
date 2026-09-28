@@ -24,14 +24,12 @@ export default function MoviePage() {
   const [watchedCount, setWatchedCount] = useState(0);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [watchDate, setWatchDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [diarySubmitting, setDiarySubmitting] = useState(false);
   const [myReview, setMyReview] = useState(null);
   const [reviewRating, setReviewRating] = useState('');
   const [reviewText, setReviewText] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
   const [communityError, setCommunityError] = useState('');
-  const [reviewSaved, setReviewSaved] = useState(false);
 
   useEffect(() => {
     setMovie(null);
@@ -42,7 +40,7 @@ export default function MoviePage() {
     setMyReview(null);
     setReviewRating('');
     setReviewText('');
-    setReviewSaved(false);
+    setWatchDate(new Date().toISOString().slice(0, 10));
 
     getMovie(tmdbId)
       .then(({ movie: loadedMovie }) => {
@@ -86,33 +84,31 @@ export default function MoviePage() {
 
   async function handleSaveDiary(e) {
     e.preventDefault();
-    setDiarySubmitting(true);
-    try {
-      await logMovie(tmdbId, watchDate);
-      setWatchedCount((prev) => prev + 1);
-      setShowDiaryModal(false);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setDiarySubmitting(false);
-    }
-  }
-
-  async function handleSaveReview(e) {
-    e.preventDefault();
     setReviewError('');
     setCommunityError('');
-    setReviewSaved(false);
+    if (reviewText.trim() && reviewRating === '') {
+      setReviewError('Selecione uma nota para publicar a resenha.');
+      return;
+    }
+
     setReviewSubmitting(true);
     try {
-      const { review } = await saveMovieReview(tmdbId, Number(reviewRating), reviewText);
-      setMyReview(review);
-      setReviewSaved(true);
-      try {
-        setCommunity(await getMovieReviews(tmdbId));
-      } catch (err) {
-        setCommunityError(`Avaliação salva, mas não foi possível atualizar a comunidade: ${err.message}`);
+      if (watchedCount === 0) {
+        await logMovie(tmdbId, watchDate);
+        setWatchedCount((count) => count + 1);
       }
+
+      if (reviewRating !== '') {
+        const { review } = await saveMovieReview(tmdbId, Number(reviewRating), reviewText);
+        setMyReview(review);
+        try {
+          setCommunity(await getMovieReviews(tmdbId));
+        } catch (err) {
+          setCommunityError(`Avaliação salva, mas não foi possível atualizar a comunidade: ${err.message}`);
+        }
+      }
+
+      setShowDiaryModal(false);
     } catch (err) {
       setReviewError(err.message);
     } finally {
@@ -124,6 +120,7 @@ export default function MoviePage() {
   if (!movie) return <div className="container"><p className={styles.loading}>Carregando…</p></div>;
 
   const details = [movie.year, formatRuntime(movie.runtime), movie.genres.join(', ')].filter(Boolean);
+  const isAlreadyWatched = watchedCount > 0;
 
   return (
     <article>
@@ -180,65 +177,6 @@ export default function MoviePage() {
 
       <section className={`container ${styles.reviewsSection}`}>
         <h2 className={styles.section}>Avaliações e resenhas</h2>
-        {user ? (
-          watchedCount > 0 || myReview ? (
-            <form className={styles.reviewForm} onSubmit={handleSaveReview}>
-              <fieldset className={styles.ratingFieldset}>
-                <legend className={styles.reviewLabel}>Sua nota de 0 a 5 estrelas</legend>
-                <div className={styles.ratingOptions}>
-                  {[0, 1, 2, 3, 4, 5].map((value) => {
-                    const isSelected = reviewRating === String(value);
-                    const isFilled = value > 0 && Number(reviewRating) >= value;
-                    return (
-                      <label
-                        className={`${styles.ratingChoice} ${isFilled ? styles.filled : ''} ${isSelected ? styles.selected : ''}`}
-                        key={value}
-                      >
-                        <input
-                          className={styles.ratingRadio}
-                          type="radio"
-                          name="review-rating"
-                          value={value}
-                          checked={isSelected}
-                          onChange={(e) => setReviewRating(e.target.value)}
-                          required
-                        />
-                        <span className={`${styles.ratingSymbol} ${value === 0 ? styles.ratingZero : ''}`} aria-hidden="true">
-                          {value === 0 ? '0' : '★'}
-                        </span>
-                        <span className={styles.srOnly}>
-                          {value === 0 ? 'Nota zero, sem estrelas' : `${value} ${value === 1 ? 'estrela' : 'estrelas'}`}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-              <label className={styles.reviewLabel} htmlFor="review-text">Resenha (opcional)</label>
-              <textarea
-                id="review-text"
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                maxLength={2000}
-                rows={5}
-                placeholder="O que você achou do filme?"
-              />
-              <div className={styles.reviewSubmit}>
-                <span className={styles.characterCount}>{reviewText.length}/2000</span>
-                <button className="btn" type="submit" disabled={reviewSubmitting || reviewRating === ''}>
-                  {reviewSubmitting ? 'Salvando…' : myReview ? 'Atualizar avaliação' : 'Publicar avaliação'}
-                </button>
-              </div>
-              {reviewError && <p className="error" role="alert">{reviewError}</p>}
-              {reviewSaved && <p className={styles.savedMessage} role="status">Avaliação salva.</p>}
-            </form>
-          ) : (
-            <p className={styles.reviewPrompt}>Marque o filme como assistido no diário para avaliá-lo.</p>
-          )
-        ) : (
-          <p className={styles.reviewPrompt}>Entre na sua conta e marque o filme como assistido para avaliá-lo. <Link to="/login">Entrar</Link></p>
-        )}
-
         <div className={styles.communityReviews}>
           <h3>Resenhas da comunidade</h3>
           {communityError && <p className="error" role="alert">{communityError}</p>}
@@ -259,24 +197,88 @@ export default function MoviePage() {
       {showDiaryModal && (
         <div className={styles.modalOverlay} onClick={() => setShowDiaryModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Registrar no Diário</h3>
-            <p className={styles.modalSubtitle}>Quando você assistiu a este filme?</p>
-            <form onSubmit={handleSaveDiary}>
-              <input
-                type="date"
-                value={watchDate}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setWatchDate(e.target.value)}
-                required
+            <h3>{isAlreadyWatched ? 'Editar avaliação' : 'Registrar no Diário'}</h3>
+            <p className={styles.modalSubtitle}>
+              {isAlreadyWatched ? 'Atualize sua nota ou resenha deste filme.' : 'Quando você assistiu a este filme?'}
+            </p>
+            <form className={styles.modalReviewForm} onSubmit={handleSaveDiary}>
+              {!isAlreadyWatched && (
+                <>
+                  <label className={styles.reviewLabel} htmlFor="watch-date">Data em que assistiu</label>
+                  <input
+                    id="watch-date"
+                    type="date"
+                    value={watchDate}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setWatchDate(e.target.value)}
+                    required
+                  />
+                </>
+              )}
+              <fieldset className={styles.ratingFieldset}>
+                <legend className={styles.reviewLabel}>Sua nota de 0 a 5 estrelas</legend>
+                <div className={styles.ratingOptions}>
+                  {[0, 1, 2, 3, 4, 5].map((value) => {
+                    const isSelected = reviewRating === String(value);
+                    const isFilled = value > 0 && Number(reviewRating) >= value;
+                    return (
+                      <label
+                        className={`${styles.ratingChoice} ${isFilled ? styles.filled : ''} ${isSelected ? styles.selected : ''}`}
+                        key={value}
+                      >
+                        <input
+                          className={styles.ratingRadio}
+                          type="radio"
+                          name="review-rating"
+                          value={value}
+                          checked={isSelected}
+                          onChange={(e) => setReviewRating(e.target.value)}
+                        />
+                        <span className={`${styles.ratingSymbol} ${value === 0 ? styles.ratingZero : ''}`} aria-hidden="true">
+                          {value === 0 ? '0' : '★'}
+                        </span>
+                        <span className={styles.srOnly}>
+                          {value === 0 ? 'Nota zero, sem estrelas' : `${value} ${value === 1 ? 'estrela' : 'estrelas'}`}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <label className={styles.reviewLabel} htmlFor="review-text">Resenha (opcional)</label>
+              <textarea
+                className={styles.reviewTextarea}
+                id="review-text"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                maxLength={2000}
+                rows={4}
+                placeholder="O que você achou do filme?"
               />
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowDiaryModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn" disabled={diarySubmitting}>
-                  {diarySubmitting ? 'Salvando…' : 'Salvar no diário'}
-                </button>
+              <div className={styles.reviewSubmit}>
+                <span className={styles.characterCount}>{reviewText.length}/2000</span>
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={() => setShowDiaryModal(false)}
+                    disabled={reviewSubmitting}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn"
+                    type="submit"
+                    disabled={reviewSubmitting || (isAlreadyWatched && reviewRating === '') || (reviewText.trim() !== '' && reviewRating === '')}
+                  >
+                    {reviewSubmitting ? 'Salvando…' : isAlreadyWatched ? 'Salvar avaliação' : reviewRating === '' ? 'Marcar como assistido' : 'Registrar e avaliar'}
+                  </button>
+                </div>
               </div>
+              {reviewText.trim() !== '' && reviewRating === '' && (
+                <p className="error" role="alert">Selecione uma nota para publicar a resenha.</p>
+              )}
+              {reviewError && <p className="error" role="alert">{reviewError}</p>}
             </form>
           </div>
         </div>
