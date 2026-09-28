@@ -24,6 +24,7 @@ export default function MoviePage() {
   const [watchedCount, setWatchedCount] = useState(0);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [watchDate, setWatchDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [recordAnotherWatch, setRecordAnotherWatch] = useState(false);
   const [myReview, setMyReview] = useState(null);
   const [reviewRating, setReviewRating] = useState('');
   const [reviewText, setReviewText] = useState('');
@@ -82,6 +83,16 @@ export default function MoviePage() {
     }
   }
 
+  function openDiaryModal() {
+    setWatchDate(new Date().toISOString().slice(0, 10));
+    setRecordAnotherWatch(false);
+    setReviewRating(myReview ? String(myReview.rating) : '');
+    setReviewText(myReview?.text || '');
+    setReviewError('');
+    setCommunityError('');
+    setShowDiaryModal(true);
+  }
+
   async function handleSaveDiary(e) {
     e.preventDefault();
     setReviewError('');
@@ -93,7 +104,7 @@ export default function MoviePage() {
 
     setReviewSubmitting(true);
     try {
-      if (watchedCount === 0) {
+      if (watchedCount === 0 || recordAnotherWatch) {
         await logMovie(tmdbId, watchDate);
         setWatchedCount((count) => count + 1);
       }
@@ -164,7 +175,7 @@ export default function MoviePage() {
             <button
               type="button"
               className={`${styles.actionBtn} ${watchedCount > 0 ? styles.active : ''}`}
-              onClick={() => setShowDiaryModal(true)}
+              onClick={openDiaryModal}
             >
               {watchedCount > 0 ? `✓ Assistido (${watchedCount})` : '+ Marcar como assistido'}
             </button>
@@ -199,10 +210,22 @@ export default function MoviePage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{isAlreadyWatched ? 'Editar avaliação' : 'Registrar no Diário'}</h3>
             <p className={styles.modalSubtitle}>
-              {isAlreadyWatched ? 'Atualize sua nota ou resenha deste filme.' : 'Quando você assistiu a este filme?'}
+              {isAlreadyWatched
+                ? recordAnotherWatch ? 'Registre outra sessão e atualize sua avaliação.' : 'Atualize sua nota ou resenha deste filme.'
+                : 'Quando você assistiu a este filme?'}
             </p>
             <form className={styles.modalReviewForm} onSubmit={handleSaveDiary}>
-              {!isAlreadyWatched && (
+              {isAlreadyWatched && (
+                <label className={styles.repeatWatchToggle}>
+                  <input
+                    type="checkbox"
+                    checked={recordAnotherWatch}
+                    onChange={(e) => setRecordAnotherWatch(e.target.checked)}
+                  />
+                  Registrar outra sessão no diário
+                </label>
+              )}
+              {(!isAlreadyWatched || recordAnotherWatch) && (
                 <>
                   <label className={styles.reviewLabel} htmlFor="watch-date">Data em que assistiu</label>
                   <input
@@ -269,9 +292,15 @@ export default function MoviePage() {
                   <button
                     className="btn"
                     type="submit"
-                    disabled={reviewSubmitting || (isAlreadyWatched && reviewRating === '') || (reviewText.trim() !== '' && reviewRating === '')}
+                    disabled={reviewSubmitting || (isAlreadyWatched && !recordAnotherWatch && reviewRating === '') || (reviewText.trim() !== '' && reviewRating === '')}
                   >
-                    {reviewSubmitting ? 'Salvando…' : isAlreadyWatched ? 'Salvar avaliação' : reviewRating === '' ? 'Marcar como assistido' : 'Registrar e avaliar'}
+                    {reviewSubmitting
+                      ? 'Salvando…'
+                      : isAlreadyWatched
+                        ? recordAnotherWatch
+                          ? reviewRating === '' ? 'Registrar sessão' : 'Registrar sessão e salvar avaliação'
+                          : 'Salvar avaliação'
+                        : reviewRating === '' ? 'Marcar como assistido' : 'Registrar e avaliar'}
                   </button>
                 </div>
               </div>

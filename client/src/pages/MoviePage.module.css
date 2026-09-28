@@ -235,6 +235,13 @@
   margin: 6px 0 18px;
 }
 
+.repeatWatchToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.repeatWatchToggle input { width: auto; margin: 0; accent-color: var(--accent); }
+
 .modalActions {
   display: flex;
   justify-content: flex-end;
