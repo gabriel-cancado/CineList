@@ -65,6 +65,56 @@
 
 .reviewLabel { font-weight: 600; }
 
+.ratingFieldset { border: 0; padding: 0; margin: 0; }
+.ratingFieldset legend { margin-bottom: 8px; }
+.ratingOptions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ratingChoice {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ratingChoice:hover,
+.ratingChoice.filled { color: var(--accent); }
+.ratingChoice.selected {
+  border-color: var(--accent);
+  background: rgba(242, 181, 68, 0.12);
+}
+.ratingRadio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ratingRadio:focus-visible + .ratingSymbol {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.ratingSymbol { font-size: 24px; line-height: 1; }
+.ratingZero { font-size: 14px; font-weight: 600; }
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .reviewForm select,
 .reviewForm textarea {
   width: 100%;

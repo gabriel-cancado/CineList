@@ -183,18 +183,37 @@ export default function MoviePage() {
         {user ? (
           watchedCount > 0 || myReview ? (
             <form className={styles.reviewForm} onSubmit={handleSaveReview}>
-              <label className={styles.reviewLabel} htmlFor="review-rating">Sua nota</label>
-              <select
-                id="review-rating"
-                value={reviewRating}
-                onChange={(e) => setReviewRating(e.target.value)}
-                required
-              >
-                <option value="" disabled>Selecione de 0 a 5 estrelas</option>
-                {[0, 1, 2, 3, 4, 5].map((value) => (
-                  <option key={value} value={value}>{value} {value === 1 ? 'estrela' : 'estrelas'}</option>
-                ))}
-              </select>
+              <fieldset className={styles.ratingFieldset}>
+                <legend className={styles.reviewLabel}>Sua nota de 0 a 5 estrelas</legend>
+                <div className={styles.ratingOptions}>
+                  {[0, 1, 2, 3, 4, 5].map((value) => {
+                    const isSelected = reviewRating === String(value);
+                    const isFilled = value > 0 && Number(reviewRating) >= value;
+                    return (
+                      <label
+                        className={`${styles.ratingChoice} ${isFilled ? styles.filled : ''} ${isSelected ? styles.selected : ''}`}
+                        key={value}
+                      >
+                        <input
+                          className={styles.ratingRadio}
+                          type="radio"
+                          name="review-rating"
+                          value={value}
+                          checked={isSelected}
+                          onChange={(e) => setReviewRating(e.target.value)}
+                          required
+                        />
+                        <span className={`${styles.ratingSymbol} ${value === 0 ? styles.ratingZero : ''}`} aria-hidden="true">
+                          {value === 0 ? '0' : '★'}
+                        </span>
+                        <span className={styles.srOnly}>
+                          {value === 0 ? 'Nota zero, sem estrelas' : `${value} ${value === 1 ? 'estrela' : 'estrelas'}`}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
               <label className={styles.reviewLabel} htmlFor="review-text">Resenha (opcional)</label>
               <textarea
                 id="review-text"
