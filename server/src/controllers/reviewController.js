@@ -65,11 +65,20 @@ export async function save(req, res) {
     throw new HttpError(400, 'Marque o filme como assistido antes de avaliá-lo');
   }
 
-  const review = await MovieReview.findOneAndUpdate(
-    { user: req.user._id, movie: movie._id },
-    { $set: { rating, text } },
-    { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true },
-  ).populate('user', 'name');
+  const reviewFilter = { user: req.user._id, movie: movie._id };
+  let review;
+  try {
+    review = await MovieReview.findOneAndUpdate(
+      reviewFilter,
+      { $set: { rating, text } },
+      { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true },
+    ).populate('user', 'name');
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+
+    review = await MovieReview.findOne(reviewFilter).populate('user', 'name');
+    if (!review) throw error;
+  }
 
   res.json({ review });
 }
