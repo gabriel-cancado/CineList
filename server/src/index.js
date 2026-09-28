@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import movieRoutes from './routes/movieRoutes.js';
 import watchlistRoutes from './routes/watchlistRoutes.js';
 import diaryRoutes from './routes/diaryRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 
 const app = express();
 app.use(cors());
@@ -16,6 +17,7 @@ app.use('/auth', authRoutes);
 app.use('/movies', movieRoutes);
 app.use('/watchlist', watchlistRoutes);
 app.use('/diary', diaryRoutes);
+app.use('/reviews', reviewRoutes);
 
 app.use(errorHandler);
 
