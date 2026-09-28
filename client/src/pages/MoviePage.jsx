@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getMovie } from '../api/movies';
 import { checkWatchlist, addToWatchlist, removeFromWatchlist } from '../api/watchlist';
-import { checkDiary, logMovie } from '../api/diary';
+import { checkDiary, logMovie, removeDiaryEntry } from '../api/diary';
 import { getMovieReviews, getMyMovieReview, saveMovieReview } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
 import styles from './MoviePage.module.css';
@@ -22,9 +22,12 @@ export default function MoviePage() {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
   const [watchedCount, setWatchedCount] = useState(0);
+  const [diaryEntryId, setDiaryEntryId] = useState(null);
+  const [diaryLoading, setDiaryLoading] = useState(false);
+  const [diarySubmitting, setDiarySubmitting] = useState(false);
+  const [diaryError, setDiaryError] = useState('');
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [watchDate, setWatchDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [recordAnotherWatch, setRecordAnotherWatch] = useState(false);
   const [myReview, setMyReview] = useState(null);
   const [reviewRating, setReviewRating] = useState('');
   const [reviewText, setReviewText] = useState('');
@@ -38,10 +41,14 @@ export default function MoviePage() {
     setCommunity({ averageRating: null, ratingsCount: 0, reviews: [] });
     setCommunityError('');
     setReviewError('');
+    setDiaryError('');
     setMyReview(null);
     setReviewRating('');
     setReviewText('');
     setWatchDate(new Date().toISOString().slice(0, 10));
+    setWatchedCount(0);
+    setDiaryEntryId(null);
+    setDiaryLoading(Boolean(user));
 
     getMovie(tmdbId)
       .then(({ movie: loadedMovie }) => {
@@ -52,7 +59,13 @@ export default function MoviePage() {
 
     if (user) {
       checkWatchlist(tmdbId).then((data) => setInWatchlist(data.inWatchlist)).catch(() => {});
-      checkDiary(tmdbId).then((data) => setWatchedCount(data.count || 0)).catch(() => {});
+      checkDiary(tmdbId)
+        .then((data) => {
+          setWatchedCount(data.count || 0);
+          setDiaryEntryId(data.entryId || null);
+        })
+        .catch(() => {})
+        .finally(() => setDiaryLoading(false));
       getMyMovieReview(tmdbId).then(({ review }) => {
         setMyReview(review);
         if (review) {
@@ -63,6 +76,8 @@ export default function MoviePage() {
     } else {
       setInWatchlist(false);
       setWatchedCount(0);
+      setDiaryEntryId(null);
+      setDiaryLoading(false);
     }
   }, [tmdbId, user]);
 
@@ -85,12 +100,38 @@ export default function MoviePage() {
 
   function openDiaryModal() {
     setWatchDate(new Date().toISOString().slice(0, 10));
-    setRecordAnotherWatch(false);
     setReviewRating(myReview ? String(myReview.rating) : '');
     setReviewText(myReview?.text || '');
     setReviewError('');
     setCommunityError('');
     setShowDiaryModal(true);
+  }
+
+  async function handleDiaryToggle() {
+    setDiaryError('');
+    if (!user) {
+      setDiaryError('Entre na sua conta para marcar o filme como assistido.');
+      return;
+    }
+    if (watchedCount === 0) {
+      openDiaryModal();
+      return;
+    }
+    if (!diaryEntryId) {
+      setDiaryError('Não foi possível localizar a entrada do diário. Atualize a página e tente novamente.');
+      return;
+    }
+
+    setDiarySubmitting(true);
+    try {
+      await removeDiaryEntry(diaryEntryId);
+      setWatchedCount(0);
+      setDiaryEntryId(null);
+    } catch (err) {
+      setDiaryError(err.message);
+    } finally {
+      setDiarySubmitting(false);
+    }
   }
 
   async function handleSaveDiary(e) {
@@ -104,9 +145,10 @@ export default function MoviePage() {
 
     setReviewSubmitting(true);
     try {
-      if (watchedCount === 0 || recordAnotherWatch) {
-        await logMovie(tmdbId, watchDate);
-        setWatchedCount((count) => count + 1);
+      if (watchedCount === 0) {
+        const { entry } = await logMovie(tmdbId, watchDate);
+        setWatchedCount(1);
+        setDiaryEntryId(entry._id);
       }
 
       if (reviewRating !== '') {
@@ -175,11 +217,18 @@ export default function MoviePage() {
             <button
               type="button"
               className={`${styles.actionBtn} ${watchedCount > 0 ? styles.active : ''}`}
-              onClick={openDiaryModal}
+              onClick={handleDiaryToggle}
+              disabled={diaryLoading || diarySubmitting}
             >
-              {watchedCount > 0 ? `✓ Assistido (${watchedCount})` : '+ Marcar como assistido'}
+              {diaryLoading ? 'Verificando…' : watchedCount > 0 ? '✓ Assistido' : '+ Marcar como assistido'}
             </button>
+            {user && watchedCount > 0 && (
+              <button type="button" className={styles.actionBtn} onClick={openDiaryModal} disabled={diarySubmitting}>
+                Editar avaliação
+              </button>
+            )}
           </div>
+          {diaryError && <p className="error" role="alert">{diaryError}</p>}
 
           <h2 className={styles.section}>Sinopse</h2>
           <p className={styles.overview}>{movie.overview || 'Sinopse não disponível.'}</p>
@@ -210,22 +259,10 @@ export default function MoviePage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{isAlreadyWatched ? 'Editar avaliação' : 'Registrar no Diário'}</h3>
             <p className={styles.modalSubtitle}>
-              {isAlreadyWatched
-                ? recordAnotherWatch ? 'Registre outra sessão e atualize sua avaliação.' : 'Atualize sua nota ou resenha deste filme.'
-                : 'Quando você assistiu a este filme?'}
+              {isAlreadyWatched ? 'Atualize sua nota ou resenha deste filme.' : 'Quando você assistiu a este filme?'}
             </p>
             <form className={styles.modalReviewForm} onSubmit={handleSaveDiary}>
-              {isAlreadyWatched && (
-                <label className={styles.repeatWatchToggle}>
-                  <input
-                    type="checkbox"
-                    checked={recordAnotherWatch}
-                    onChange={(e) => setRecordAnotherWatch(e.target.checked)}
-                  />
-                  Registrar outra sessão no diário
-                </label>
-              )}
-              {(!isAlreadyWatched || recordAnotherWatch) && (
+              {!isAlreadyWatched && (
                 <>
                   <label className={styles.reviewLabel} htmlFor="watch-date">Data em que assistiu</label>
                   <input
@@ -292,14 +329,12 @@ export default function MoviePage() {
                   <button
                     className="btn"
                     type="submit"
-                    disabled={reviewSubmitting || (isAlreadyWatched && !recordAnotherWatch && reviewRating === '') || (reviewText.trim() !== '' && reviewRating === '')}
+                    disabled={reviewSubmitting || (isAlreadyWatched && reviewRating === '') || (reviewText.trim() !== '' && reviewRating === '')}
                   >
                     {reviewSubmitting
                       ? 'Salvando…'
                       : isAlreadyWatched
-                        ? recordAnotherWatch
-                          ? reviewRating === '' ? 'Registrar sessão' : 'Registrar sessão e salvar avaliação'
-                          : 'Salvar avaliação'
+                        ? 'Salvar avaliação'
                         : reviewRating === '' ? 'Marcar como assistido' : 'Registrar e avaliar'}
                   </button>
                 </div>
