@@ -236,9 +236,8 @@ export default function MoviePage() {
       </div>
 
       <section className={`container ${styles.reviewsSection}`}>
-        <h2 className={styles.section}>Avaliações e resenhas</h2>
         <div className={styles.communityReviews}>
-          <h3>Resenhas da comunidade</h3>
+          <h2 className={styles.section}>Resenhas da comunidade</h2>
           {communityError && <p className="error" role="alert">{communityError}</p>}
           {community.reviews.length ? community.reviews.map((review) => (
             <article className={styles.reviewItem} key={review._id}>
